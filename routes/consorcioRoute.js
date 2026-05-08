@@ -17,7 +17,17 @@ consorcioRouter.get("/", auth.validarToken, (req, res) => {
     ctrl.listar(req, res);
 })
 
-consorcioRouter.post("/", (req, res) => {
+consorcioRouter.get("/meus", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Consórcio']
+    // #swagger.summary = 'Lista os consórcios administrados pelo usuário logado'
+    ctrl.listarMeus(req, res);
+})
+
+consorcioRouter.post("/", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]
@@ -27,7 +37,7 @@ consorcioRouter.post("/", (req, res) => {
     ctrl.cadastrar(req, res);
 })
 
-consorcioRouter.put("/", auth.validarToken, (req, res) => {
+consorcioRouter.put("/:id", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]

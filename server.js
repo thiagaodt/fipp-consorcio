@@ -7,12 +7,13 @@ import http from 'http'
 import swaggerUi from 'swagger-ui-express';
 import swaggerDocument from "./swagger_output.json" with { type: "json" };
 
-import authRouter from './routes/authRoute.js'; 
+import authRouter from './routes/authRoute.js';
 import usuarioRouter from './routes/usuarioRoute.js';
 import consorcioRouter from './routes/consorcioRoute.js';
 import cotaRouter from './routes/cotaRoute.js';
 import assembleiaRouter from './routes/assembleiaRoute.js';
 import pagamentoRouter from './routes/pagamentoRoute.js';
+import saldoRouter from './routes/saldoRoute.js';
 
 dotenv.config();
 const app = express();
@@ -32,7 +33,7 @@ app.use('/consorcio', consorcioRouter);
 app.use('/cota', cotaRouter);
 app.use('/assembleia', assembleiaRouter);
 app.use('/pagamento', pagamentoRouter);
-
+app.use('/saldo', saldoRouter);
 
 server.listen(PORT, function() {
     console.log('backend OK: http://localhost:' + PORT + '/docs');

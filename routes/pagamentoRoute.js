@@ -17,17 +17,53 @@ pagamentoRouter.get("/", auth.validarToken, (req, res) => {
     ctrl.listar(req, res);
 })
 
-pagamentoRouter.post("/", (req, res) => {
+pagamentoRouter.get("/cota/:cot_id", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]
     */
     // #swagger.tags = ['Pagamento']
-    // #swagger.summary = 'Cadastra um novo pagamento'
+    // #swagger.summary = 'Lista pagamentos de uma cota'
+    ctrl.listarPorCota(req, res);
+})
+
+pagamentoRouter.get("/assembleia/:ass_id", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Pagamento']
+    // #swagger.summary = 'Lista pagamentos de uma assembleia'
+    ctrl.listarPorAssembleia(req, res);
+})
+
+pagamentoRouter.post("/", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Pagamento']
+    // #swagger.summary = 'Cadastra um novo pagamento (uso interno)'
     ctrl.cadastrar(req, res);
 })
 
-pagamentoRouter.put("/", auth.validarToken, (req, res) => {
+pagamentoRouter.post("/pix", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Pagamento']
+    // #swagger.summary = 'Gera um QR Code PIX (AbacatePay) para pagamento da parcela'
+    ctrl.gerarPix(req, res);
+})
+
+pagamentoRouter.post("/webhook", (req, res) => {
+    // #swagger.tags = ['Pagamento']
+    // #swagger.summary = 'Webhook do AbacatePay para confirmação de pagamento'
+    ctrl.webhook(req, res);
+})
+
+pagamentoRouter.put("/:id", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]

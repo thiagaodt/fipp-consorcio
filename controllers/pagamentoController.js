@@ -1,12 +1,42 @@
 import PagamentoRepository from "../repositories/pagamentoRepository.js";
 import PagamentoEntity from "../entities/pagamentoEntity.js";
+import CotaRepository from "../repositories/cotaRepository.js";
+import ConsorcioRepository from "../repositories/consorcioRepository.js";
+import AssembleiaRepository from "../repositories/assembleiaRepository.js";
+import UsuarioRepository from "../repositories/usuarioRepository.js";
+import SaldoConsorcioRepository from "../repositories/saldoConsorcioRepository.js";
+import SaldoAdministradorRepository from "../repositories/saldoAdministradorRepository.js";
+import MovimentacaoConsorcioRepository from "../repositories/movimentacaoConsorcioRepository.js";
+import MovimentacaoConsorcioEntity from "../entities/movimentacaoConsorcioEntity.js";
+import MovimentacaoAdministradorRepository from "../repositories/movimentacaoAdministradorRepository.js";
+import MovimentacaoAdministradorEntity from "../entities/movimentacaoAdministradorEntity.js";
+import { pagamentoSchema, pagamentoGerarPixSchema, webhookSchema } from "../schemas/pagamentoSchema.js";
+import AbacatePay from "../utils/abacatePay.js";
 
 export default class PagamentoController {
-    
+
     #repositorio;
+    #cotaRepository;
+    #consorcioRepository;
+    #assembleiaRepository;
+    #usuarioRepository;
+    #saldoConsorcioRepository;
+    #saldoAdministradorRepository;
+    #movimentacaoConsorcioRepository;
+    #movimentacaoAdministradorRepository;
+    #abacatePay;
 
     constructor() {
         this.#repositorio = new PagamentoRepository();
+        this.#cotaRepository = new CotaRepository();
+        this.#consorcioRepository = new ConsorcioRepository();
+        this.#assembleiaRepository = new AssembleiaRepository();
+        this.#usuarioRepository = new UsuarioRepository();
+        this.#saldoConsorcioRepository = new SaldoConsorcioRepository();
+        this.#saldoAdministradorRepository = new SaldoAdministradorRepository();
+        this.#movimentacaoConsorcioRepository = new MovimentacaoConsorcioRepository();
+        this.#movimentacaoAdministradorRepository = new MovimentacaoAdministradorRepository();
+        this.#abacatePay = new AbacatePay();
     }
 
     async listar(req, res) {
@@ -23,20 +53,52 @@ export default class PagamentoController {
         }
     }
 
+    async listarPorCota(req, res) {
+        try {
+            const { cot_id } = req.params;
+            const lista = await this.#repositorio.listarPorCota(cot_id);
+            if(lista.length > 0)
+                res.status(200).json(lista);
+            else
+                res.status(404).json({msg: "Nenhum pagamento encontrado para esta cota"});
+        }
+        catch(exception) {
+            console.log(exception);
+            res.status(500).json({msg: "Erro ao processar requisição"});
+        }
+    }
+
+    async listarPorAssembleia(req, res) {
+        try {
+            const { ass_id } = req.params;
+            const lista = await this.#repositorio.listarPorAssembleia(ass_id);
+            if(lista.length > 0)
+                res.status(200).json(lista);
+            else
+                res.status(404).json({msg: "Nenhum pagamento encontrado para esta assembleia"});
+        }
+        catch(exception) {
+            console.log(exception);
+            res.status(500).json({msg: "Erro ao processar requisição"});
+        }
+    }
+
     async cadastrar(req, res) {
         try {
-            let {cot_id, valor, data_pagamento, status} = req.body;
-            if(cot_id && valor && data_pagamento && status) {
-                let entidade = new PagamentoEntity(null, cot_id, valor, data_pagamento, status);
-                let success = await this.#repositorio.cadastrar(entidade);
-                if(success)
-                    return res.status(200).json({msg: "Pagamento cadastrado com sucesso"});
-                else
-                    throw new Error("Erro ao cadastrar pagamento. Não foi possível persisti-lo no banco de dados");
+            const validacao = pagamentoSchema.safeParse(req.body);
+            if(!validacao.success) {
+                return res.status(400).json({
+                    msg: "Falha na validação dos dados",
+                    erros: validacao.error.format()
+                });
             }
-            else {
-                return res.status(400).json({msg: "O pagamento precisa ter cot_id, valor, data_pagamento e status definidos!"})
-            }
+            const { cot_id, ass_id, valor, status } = validacao.data;
+            const entidade = new PagamentoEntity(null, cot_id, ass_id, status ?? "PENDENTE", new Date(), null, valor);
+            const id = await this.#repositorio.cadastrar(entidade);
+            if(id)
+                return res.status(200).json({msg: "Pagamento cadastrado com sucesso", pag_id: id});
+            else
+                throw new Error("Erro ao cadastrar pagamento. Não foi possível persisti-lo no banco de dados");
         }
         catch(exception) {
             console.log(exception);
@@ -51,12 +113,11 @@ export default class PagamentoController {
                 if(await this.#repositorio.deletar(id))
                     return res.status(200).json({msg: "Pagamento excluído com sucesso!"});
                 else
-                    throw new Error("Erro ao deletar pagamento no banco de dados")
+                    throw new Error("Erro ao deletar pagamento no banco de dados");
             }
             else {
                 return res.status(404).json({msg: "Pagamento não encontrado para deleção"});
             }
-
         }
         catch(exception) {
             console.log(exception);
@@ -66,24 +127,32 @@ export default class PagamentoController {
 
     async atualizar(req, res) {
         try {
-            let {id, cot_id, valor, data_pagamento, status} = req.body;
-
-            if(id && cot_id && valor && data_pagamento && status) {
-                if(await this.#repositorio.buscarPorId(id)) {
-                    let entidade = new PagamentoEntity(id, cot_id, valor, data_pagamento, status);
-                    if(await this.#repositorio.alterar(entidade))
-                        res.status(200).json({msg: "Pagamento alterado!"});
-                    else
-                        throw new Error("Erro ao alterar pagamento no banco de dados");
-                }
-                else {
-                    res.status(404).json({msg: "Pagamento não encontrado para alteração"});
-                }
+            const { id } = req.params;
+            const validacao = pagamentoSchema.safeParse(req.body);
+            if(!validacao.success) {
+                return res.status(400).json({
+                    msg: "Falha na validação dos dados",
+                    erros: validacao.error.format()
+                });
             }
-            else {
-                res.status(400).json({msg: "As informações do pagamento não estão corretas!"})
+            const existente = await this.#repositorio.buscarPorId(id);
+            if(!existente) {
+                return res.status(404).json({msg: "Pagamento não encontrado para alteração"});
             }
-
+            const { cot_id, ass_id, valor, status } = validacao.data;
+            const entidade = new PagamentoEntity(
+                id,
+                cot_id,
+                ass_id,
+                status ?? existente.status,
+                existente.datageracao,
+                existente.datapagamento,
+                valor
+            );
+            if(await this.#repositorio.alterar(entidade))
+                return res.status(200).json({msg: "Pagamento alterado!"});
+            else
+                throw new Error("Erro ao alterar pagamento no banco de dados");
         }
         catch(exception) {
             console.log(exception);
@@ -107,4 +176,180 @@ export default class PagamentoController {
         }
     }
 
-}   
+    async gerarPix(req, res) {
+        try {
+            const validacao = pagamentoGerarPixSchema.safeParse(req.body);
+            if(!validacao.success) {
+                return res.status(400).json({
+                    msg: "Falha na validação dos dados",
+                    erros: validacao.error.format()
+                });
+            }
+            const { cot_id, ass_id } = validacao.data;
+
+            const cota = await this.#cotaRepository.buscarPorId(cot_id);
+            if(!cota) {
+                return res.status(404).json({msg: "Cota não encontrada"});
+            }
+            if(cota.usu_id !== req.usuarioLogado?.id) {
+                return res.status(403).json({msg: "Apenas o titular da cota pode gerar o pagamento"});
+            }
+
+            const assembleia = await this.#assembleiaRepository.buscarPorId(ass_id);
+            if(!assembleia) {
+                return res.status(404).json({msg: "Assembleia não encontrada"});
+            }
+            if(assembleia.con_id !== cota.con_id) {
+                return res.status(400).json({msg: "Assembleia não pertence ao consórcio da cota"});
+            }
+
+            const consorcio = await this.#consorcioRepository.buscarPorId(cota.con_id);
+            if(!consorcio) {
+                return res.status(404).json({msg: "Consórcio não encontrado"});
+            }
+            if(consorcio.status === "FINALIZADO") {
+                return res.status(400).json({msg: "Consórcio já finalizado"});
+            }
+
+            const pagamentoExistente = await this.#repositorio.buscarPorCotaEAssembleia(cot_id, ass_id);
+            if(pagamentoExistente && pagamentoExistente.status === "CONFIRMADO") {
+                return res.status(400).json({msg: "Pagamento desta parcela já foi confirmado"});
+            }
+
+            const valor = Number(consorcio.valormensal);
+            let pag_id;
+
+            if(pagamentoExistente) {
+                pag_id = pagamentoExistente.id;
+            }
+            else {
+                const novo = new PagamentoEntity(null, cot_id, ass_id, "PENDENTE", new Date(), null, valor);
+                pag_id = await this.#repositorio.cadastrar(novo);
+                if(!pag_id) {
+                    throw new Error("Não foi possível registrar o pagamento");
+                }
+            }
+
+            const usuario = await this.#usuarioRepository.buscarPorId(cota.usu_id);
+
+            let pixData;
+            try {
+                pixData = await this.#abacatePay.criarQrCodePix({
+                    amount: Math.round(valor * 100),
+                    expiresIn: 3600,
+                    description: `Parcela ${assembleia.numero} - ${consorcio.nome}`,
+                    customer: usuario ? {
+                        name: usuario.nome,
+                        email: usuario.email
+                    } : undefined,
+                    externalId: pag_id
+                });
+            }
+            catch(integracaoErro) {
+                console.log(integracaoErro);
+                return res.status(502).json({msg: "Falha na integração com AbacatePay", detalhe: integracaoErro.message});
+            }
+
+            return res.status(200).json({
+                msg: "PIX gerado com sucesso",
+                pag_id,
+                valor,
+                pix: pixData
+            });
+        }
+        catch(exception) {
+            console.log(exception);
+            return res.status(500).json({msg: exception.message});
+        }
+    }
+
+    async webhook(req, res) {
+        try {
+            const externalId = req.body?.data?.pixQrCode?.externalId
+                            ?? req.body?.data?.externalId
+                            ?? req.body?.externalId
+                            ?? req.body?.pag_id;
+            const status = req.body?.data?.pixQrCode?.status
+                        ?? req.body?.data?.status
+                        ?? req.body?.status;
+
+            const validacao = webhookSchema.safeParse({
+                pag_id: Number(externalId),
+                status: status
+            });
+            if(!validacao.success) {
+                return res.status(400).json({
+                    msg: "Payload do webhook inválido",
+                    erros: validacao.error.format()
+                });
+            }
+
+            const { pag_id } = validacao.data;
+            const pagamento = await this.#repositorio.buscarPorId(pag_id);
+            if(!pagamento) {
+                return res.status(404).json({msg: "Pagamento não encontrado"});
+            }
+            if(pagamento.status === "CONFIRMADO") {
+                return res.status(200).json({msg: "Pagamento já estava confirmado"});
+            }
+
+            const statusNormalizado = String(status ?? "").toUpperCase();
+            const eventoConfirmacao = ["CONFIRMADO", "PAID", "APPROVED", "COMPLETED"].includes(statusNormalizado);
+            if(status && !eventoConfirmacao) {
+                return res.status(200).json({msg: "Evento ignorado", status: statusNormalizado});
+            }
+
+            await this.#repositorio.confirmarPagamento(pag_id, new Date());
+            await this.#aplicarDivisao(pagamento);
+
+            return res.status(200).json({msg: "Pagamento confirmado e saldos atualizados"});
+        }
+        catch(exception) {
+            console.log(exception);
+            return res.status(500).json({msg: exception.message});
+        }
+    }
+
+    async #aplicarDivisao(pagamento) {
+        const cota = await this.#cotaRepository.buscarPorId(pagamento.cot_id);
+        if(!cota) throw new Error("Cota associada ao pagamento não encontrada");
+        const consorcio = await this.#consorcioRepository.buscarPorId(cota.con_id);
+        if(!consorcio) throw new Error("Consórcio associado ao pagamento não encontrado");
+
+        const valor = Number(pagamento.valor);
+        const taxa = Number(consorcio.taxaadministracao);
+        const reserva = Number(consorcio.fundoreserva);
+
+        const taxaAdm = Number((valor * taxa).toFixed(2));
+        const fundoReserva = Number((valor * reserva).toFixed(2));
+        const fundoPremio = Number((valor - taxaAdm - fundoReserva).toFixed(2));
+
+        const valorConsorcio = Number((fundoPremio + fundoReserva).toFixed(2));
+        const agora = new Date();
+
+        await this.#saldoConsorcioRepository.creditar(consorcio.id, valorConsorcio);
+        await this.#saldoAdministradorRepository.creditar(consorcio.usu_id, taxaAdm);
+
+        const movConsorcio = new MovimentacaoConsorcioEntity(
+            null,
+            consorcio.id,
+            pagamento.id,
+            pagamento.ass_id,
+            "ENTRADA",
+            valorConsorcio,
+            agora
+        );
+        await this.#movimentacaoConsorcioRepository.cadastrar(movConsorcio);
+
+        const movAdm = new MovimentacaoAdministradorEntity(
+            null,
+            consorcio.usu_id,
+            consorcio.id,
+            pagamento.id,
+            "CREDITO",
+            taxaAdm,
+            agora
+        );
+        await this.#movimentacaoAdministradorRepository.cadastrar(movAdm);
+    }
+}

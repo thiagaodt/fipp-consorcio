@@ -12,9 +12,29 @@ assembleiaRouter.get("/", auth.validarToken, (req, res) => {
         "bearerAuth": []
     }]
     */
-    // #swagger.tags = ['Assembléia']   
+    // #swagger.tags = ['Assembléia']
     // #swagger.summary = 'Lista todas as assembléias cadastradas'
     ctrl.listar(req, res);
+})
+
+assembleiaRouter.get("/consorcio/:con_id", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Assembléia']
+    // #swagger.summary = 'Lista assembleias de um consórcio'
+    ctrl.listarPorConsorcio(req, res);
+})
+
+assembleiaRouter.get("/consorcio/:con_id/corrente", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Assembléia']
+    // #swagger.summary = 'Status da assembleia corrente do consórcio'
+    ctrl.statusAssembleiaCorrente(req, res);
 })
 
 assembleiaRouter.post("/", auth.validarToken, (req, res) => {
@@ -27,7 +47,17 @@ assembleiaRouter.post("/", auth.validarToken, (req, res) => {
     ctrl.cadastrar(req, res);
 })
 
-assembleiaRouter.put("/", auth.validarToken, (req, res) => {
+assembleiaRouter.post("/:id/realizar", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Assembléia']
+    // #swagger.summary = 'Realiza o sorteio da assembleia (somente administrador)'
+    ctrl.realizarAssembleia(req, res);
+})
+
+assembleiaRouter.put("/:id", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]

@@ -2,11 +2,28 @@ import Database from "../utils/database.js";
 import ConsorcioEntity from "../entities/consorcioEntity.js";
 
 export default class ConsorcioRepository {
-    
+
     #banco;
 
     constructor() {
         this.#banco = new Database();
+    }
+
+    #mapear(row) {
+        return new ConsorcioEntity(
+            row["con_id"],
+            row["con_nome"],
+            row["usu_id"],
+            row["con_quantidadecotas"],
+            row["con_valorpremio"],
+            row["con_taxaadministracao"],
+            row["con_fundoreserva"],
+            row["con_valormensal"],
+            row["con_diaassembleia"],
+            row["con_datainicio"],
+            row["con_datafim"],
+            row["con_status"]
+        );
     }
 
     async buscarPorId(id) {
@@ -15,14 +32,7 @@ export default class ConsorcioRepository {
         const rows = await this.#banco.ExecutaComando(sql, params);
 
         if (rows.length > 0) {
-            const row = rows[0];
-            const consorcio = new ConsorcioEntity(
-                row["con_id"],
-                row["con_nome"],
-                row["con_email"],
-                row["con_senha"]
-            );
-            return consorcio;
+            return this.#mapear(rows[0]);
         }
 
         return null;
@@ -32,31 +42,41 @@ export default class ConsorcioRepository {
         const sql = "SELECT * FROM tb_consorcio";
         const rows = await this.#banco.ExecutaComando(sql);
 
-        const consorcios = rows.map(row =>
-            new ConsorcioEntity(
-                row["con_id"],
-                row["con_nome"],
-                row["con_email"],
-                row["con_senha"]
-            )
-        );
+        return rows.map(row => this.#mapear(row));
+    }
 
-        return consorcios;
+    async listarPorAdministrador(usu_id) {
+        const sql = "SELECT * FROM tb_consorcio WHERE usu_id = ?";
+        const params = [usu_id];
+        const rows = await this.#banco.ExecutaComando(sql, params);
+
+        return rows.map(row => this.#mapear(row));
     }
 
     async cadastrar(consorcioEntidade) {
         const sql = `
-            INSERT INTO tb_consorcio (con_nome, con_email, con_senha)
-            VALUES (?, ?, ?)
+            INSERT INTO tb_consorcio
+                (con_nome, usu_id, con_quantidadecotas, con_valorpremio,
+                 con_taxaadministracao, con_fundoreserva, con_valormensal,
+                 con_diaassembleia, con_datainicio, con_datafim, con_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `;
         const params = [
             consorcioEntidade.nome,
-            consorcioEntidade.email,
-            consorcioEntidade.senha
+            consorcioEntidade.usu_id,
+            consorcioEntidade.quantidadecotas,
+            consorcioEntidade.valorpremio,
+            consorcioEntidade.taxaadministracao,
+            consorcioEntidade.fundoreserva,
+            consorcioEntidade.valormensal,
+            consorcioEntidade.diaassembleia,
+            consorcioEntidade.datainicio,
+            consorcioEntidade.datafim,
+            consorcioEntidade.status
         ];
 
-        const result = await this.#banco.ExecutaComandoNonQuery(sql, params);
-        return result;
+        const id = await this.#banco.ExecutaComandoLastInserted(sql, params);
+        return id;
     }
 
     async deletar(id) {
@@ -69,17 +89,32 @@ export default class ConsorcioRepository {
     async alterar(entidadeAtualizada) {
         const sql = `
             UPDATE tb_consorcio
-            SET con_nome = ?, con_email = ?, con_senha = ?
+            SET con_nome = ?, con_quantidadecotas = ?, con_valorpremio = ?,
+                con_taxaadministracao = ?, con_fundoreserva = ?, con_valormensal = ?,
+                con_diaassembleia = ?, con_datainicio = ?, con_datafim = ?, con_status = ?
             WHERE con_id = ?
         `;
         const valores = [
             entidadeAtualizada.nome,
-            entidadeAtualizada.email,
-            entidadeAtualizada.senha,
+            entidadeAtualizada.quantidadecotas,
+            entidadeAtualizada.valorpremio,
+            entidadeAtualizada.taxaadministracao,
+            entidadeAtualizada.fundoreserva,
+            entidadeAtualizada.valormensal,
+            entidadeAtualizada.diaassembleia,
+            entidadeAtualizada.datainicio,
+            entidadeAtualizada.datafim,
+            entidadeAtualizada.status,
             entidadeAtualizada.id
         ];
 
         const result = await this.#banco.ExecutaComandoNonQuery(sql, valores);
         return result;
     }
-}   
+
+    async alterarStatus(id, status) {
+        const sql = "UPDATE tb_consorcio SET con_status = ? WHERE con_id = ?";
+        const params = [status, id];
+        return await this.#banco.ExecutaComandoNonQuery(sql, params);
+    }
+}

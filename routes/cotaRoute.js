@@ -17,7 +17,27 @@ cotaRouter.get("/", auth.validarToken, (req, res) => {
     ctrl.listar(req, res);
 })
 
-cotaRouter.post("/", (req, res) => {
+cotaRouter.get("/minhas", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Cota']
+    // #swagger.summary = 'Lista as cotas do usuário logado'
+    ctrl.listarMinhas(req, res);
+})
+
+cotaRouter.get("/consorcio/:con_id", auth.validarToken, (req, res) => {
+    /* #swagger.security = [{
+        "bearerAuth": []
+    }]
+    */
+    // #swagger.tags = ['Cota']
+    // #swagger.summary = 'Lista cotas de um consórcio'
+    ctrl.listarPorConsorcio(req, res);
+})
+
+cotaRouter.post("/", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]
@@ -27,7 +47,7 @@ cotaRouter.post("/", (req, res) => {
     ctrl.cadastrar(req, res);
 })
 
-cotaRouter.put("/", auth.validarToken, (req, res) => {
+cotaRouter.put("/:id", auth.validarToken, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]
@@ -43,7 +63,7 @@ cotaRouter.delete("/:id", auth.validarToken, (req, res) => {
     }]
     */
     // #swagger.tags = ['Cota']
-    // #swagger.summary = 'Exclui um consórcio'
+    // #swagger.summary = 'Exclui uma cota'
     ctrl.deletar(req, res);
 })
 
@@ -58,4 +78,3 @@ cotaRouter.get("/:id", auth.validarToken, (req, res) => {
 })
 
 export default cotaRouter;
-
