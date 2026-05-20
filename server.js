@@ -4,8 +4,8 @@ import dotenv from 'dotenv';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import http from 'http'
-import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from "./swagger_output.json" with { type: "json" };
+/* import swaggerUi from 'swagger-ui-express';
+import swaggerDocument from "./swagger_output.json" with { type: "json" }; */
 
 import authRouter from './routes/authRoute.js';
 import usuarioRouter from './routes/usuarioRoute.js';
@@ -26,7 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(__dirname + '/public'));
 
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/auth', authRouter);
 app.use('/usuario', usuarioRouter);
 app.use('/consorcio', consorcioRouter);

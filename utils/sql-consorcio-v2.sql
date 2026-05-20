@@ -1,3 +1,7 @@
+create database consorcio;
+
+use consorcio;
+
 create table tb_usuario (
 	usu_id int primary key auto_increment,
     usu_nome varchar(200),
