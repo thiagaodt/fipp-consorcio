@@ -1,5 +1,5 @@
 import './globals.css'
-import Navbar from '@/components/Navbar'
+import AppLayout from '@/components/AppLayout'
 
 export const metadata = { title: 'FIPP Consórcio' }
 
@@ -7,8 +7,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
       <body>
-        <Navbar />
-        <main>{children}</main>
+        <AppLayout>{children}</AppLayout>
       </body>
     </html>
   )
