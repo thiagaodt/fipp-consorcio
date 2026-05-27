@@ -27,7 +27,7 @@ export default function CotasPage() {
         const pags = {}
         await Promise.all(
           data.map(async (c) => {
-            try { pags[c.cot_id] = await api.get(`/pagamento/cota/${c.cot_id}`) } catch {}
+            try { pags[c.id] = await api.get(`/pagamento/cota/${c.id}`) } catch {}
           })
         )
         setPagamentos(pags)
@@ -90,13 +90,13 @@ export default function CotasPage() {
       ) : (
         <div className="space-y-4">
           {cotas.map((cota) => {
-            const pags = pagamentos[cota.cot_id] ?? []
+            const pags = pagamentos[cota.id] ?? []
             const pendentes = pags.filter((p) => p.pag_status === 'PENDENTE')
             const confirmados = pags.filter((p) => p.pag_status === 'CONFIRMADO')
-            const isOpen = expanded[cota.cot_id]
+            const isOpen = expanded[cota.id]
 
             return (
-              <div key={cota.cot_id} className="card space-y-4">
+              <div key={cota.id} className="card space-y-4">
                 {/* Header da cota */}
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div className="flex items-center gap-3">
@@ -104,12 +104,12 @@ export default function CotasPage() {
                       <Ticket size={18} className="text-indigo-600" />
                     </div>
                     <div>
-                      <p className="font-bold text-gray-900">Cota nº {cota.cot_numero}</p>
-                      <p className="text-xs text-gray-500">{cota.con_nome ?? `Consórcio ${cota.cot_con_id}`}</p>
+                      <p className="font-bold text-gray-900">Cota nº {cota.numero}</p>
+                      <p className="text-xs text-gray-500">{cota.con_nome ?? `Consórcio ${cota.con_id}`}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge status={cota.cot_status} />
+                    <Badge status={cota.status} />
                     {pendentes.length > 0 && (
                       <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
                         {pendentes.length} pendente(s)
@@ -125,7 +125,7 @@ export default function CotasPage() {
                       <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Pagamentos pendentes</p>
                     </div>
                     {pendentes.map((p) => {
-                      const key = `${cota.cot_id}-${p.pag_ass_id}`
+                      const key = `${cota.id}-${p.pag_ass_id}`
                       return (
                         <div key={p.pag_id} className="flex items-center justify-between px-4 py-3">
                           <div>
@@ -137,7 +137,7 @@ export default function CotasPage() {
                             </p>
                           </div>
                           <button
-                            onClick={() => handlePix(cota.cot_id, p.pag_ass_id)}
+                            onClick={() => handlePix(cota.id, p.pag_ass_id)}
                             disabled={pixLoading === key}
                             className="btn-primary text-xs px-3 py-2"
                           >
@@ -156,7 +156,7 @@ export default function CotasPage() {
                 {pags.length > 0 && (
                   <div>
                     <button
-                      onClick={() => toggleExpanded(cota.cot_id)}
+                      onClick={() => toggleExpanded(cota.id)}
                       className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                     >
                       {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}

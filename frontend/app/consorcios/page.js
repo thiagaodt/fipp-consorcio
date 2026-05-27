@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { api, isAuthenticated } from '@/lib/api'
+import { api, isAuthenticated, getUser } from '@/lib/api'
 import Badge from '@/components/Badge'
 import { Plus, Building2, ArrowRight, AlertCircle } from 'lucide-react'
 
@@ -12,11 +12,16 @@ export default function ConsorciosPage() {
   const [consorcios, setConsorcios] = useState([])
   const [loading, setLoading] = useState(true)
   const [erro, setErro] = useState('')
+  const [currentUser, setCurrentUser] = useState(null)
 
   useEffect(() => {
     if (!isAuthenticated()) { router.push('/login'); return }
+    setCurrentUser(getUser())
     api.get('/consorcio')
-      .then(setConsorcios)
+      .then((data) => {
+        const emProcesso = data.filter(c => c.status === 'EM PROCESSO')
+        setConsorcios(emProcesso)
+      })
       .catch((e) => setErro(e.message))
       .finally(() => setLoading(false))
   }, [])
@@ -104,7 +109,7 @@ export default function ConsorciosPage() {
                       href={`/consorcios/${c.id}`}
                       className="text-indigo-600 hover:text-indigo-500 text-sm font-medium flex items-center gap-1 whitespace-nowrap"
                     >
-                      Acessar <ArrowRight size={13} />
+                      {currentUser?.id === c.usu_id ? 'Acessar' : 'Participar'} <ArrowRight size={13} />
                     </Link>
                   </td>
                 </tr>

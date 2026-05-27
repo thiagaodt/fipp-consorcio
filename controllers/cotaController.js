@@ -49,8 +49,16 @@ export default class CotaController {
         try {
             const usu_id = req.usuarioLogado?.id;
             const lista = await this.#repositorio.listarPorUsuario(usu_id);
-            if(lista.length > 0)
-                res.status(200).json(lista);
+            if(lista.length > 0) {
+                const listaEnriquecida = await Promise.all(lista.map(async (cota) => {
+                    const consorcio = await this.#consorcioRepository.buscarPorId(cota.con_id);
+                    return {
+                        ...cota.toJSON(),
+                        con_nome: consorcio ? consorcio.nome : "Desconhecido"
+                    };
+                }));
+                res.status(200).json(listaEnriquecida);
+            }
             else
                 res.status(404).json({msg: "Nenhuma cota encontrada"});
         }

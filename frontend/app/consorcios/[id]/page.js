@@ -8,7 +8,7 @@ import Badge from '@/components/Badge'
 import {
   ChevronLeft, Pencil, Trash2, Users, CalendarDays,
   Wallet, Trophy, AlertCircle, CheckCircle2, Loader2,
-  UserPlus, Dice5, TrendingUp, TrendingDown,
+  UserPlus, Dice5, TrendingUp, TrendingDown, Ticket
 } from 'lucide-react'
 
 const TABS = ['Informações', 'Cotas', 'Assembleias', 'Saldo']
@@ -41,8 +41,10 @@ export default function ConsorcioDetailPage() {
   const [loading, setLoading] = useState(true)
   const [novaCota, setNovaCota] = useState({ usu_id: '' })
   const [sorteioLoading, setSorteioLoading] = useState(false)
+  const [quantidadeCotas, setQuantidadeCotas] = useState(1)
+  const [comprando, setComprando] = useState(false)
 
-  const isAdmin = consorcio && user && consorcio.con_usu_id === user.id
+  const isAdmin = consorcio && user && consorcio.usu_id === user.id
 
   useEffect(() => {
     async function load() {
@@ -97,6 +99,31 @@ export default function ConsorcioDetailPage() {
       setNovaCota({ usu_id: '' })
       loadCotas()
     } catch (err) { setErro(err.message) }
+  }
+
+  async function handleComprarCotas(e) {
+    e.preventDefault()
+    setErro(''); setMsg('')
+    setComprando(true)
+    let sucessoCount = 0;
+    try {
+      for (let i = 0; i < quantidadeCotas; i++) {
+        await api.post('/cota', { con_id: Number(id), usu_id: Number(user.id) })
+        sucessoCount++;
+      }
+      setMsg(`${sucessoCount} cota(s) adquirida(s) com sucesso.`)
+      setQuantidadeCotas(1)
+      loadCotas()
+    } catch (err) {
+      if (sucessoCount > 0) {
+        setErro(`Erro após adquirir ${sucessoCount} cotas: ${err.message}`)
+        loadCotas()
+      } else {
+        setErro(err.message)
+      }
+    } finally {
+      setComprando(false)
+    }
   }
 
   async function handleSorteio(ass_id) {
@@ -237,14 +264,14 @@ export default function ConsorcioDetailPage() {
                   <label className="label">Participante</label>
                   <select
                     value={novaCota.usu_id}
-                    onChange={(e) => setNovaCota({ usu_id: e.target.value })}
+                    onChange={(e) => setNovaCota({ id: e.target.value })}
                     required
                     className="input"
                   >
                     <option value="">Selecione um usuário</option>
                     {usuarios.map((u) => (
-                      <option key={u.usu_id} value={u.usu_id}>
-                        {u.usu_nome} — {u.usu_email}
+                      <option key={u.id} value={u.id}>
+                        {u.nome} — {u.email}
                       </option>
                     ))}
                   </select>
@@ -253,6 +280,32 @@ export default function ConsorcioDetailPage() {
                   <UserPlus size={16} /> Adicionar
                 </button>
               </form>
+            </div>
+          )}
+
+          {!isAdmin && consorcio.status !== 'FINALIZADO' && (
+            <div className="card border border-indigo-100 bg-indigo-50/30">
+              <h2 className="section-title mb-4">Adquirir Cotas</h2>
+              <form onSubmit={handleComprarCotas} className="flex items-end gap-3 max-w-sm">
+                <div className="flex-1">
+                  <label className="label">Quantidade Desejada</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max={consorcio.quantidadecotas - cotas.length > 0 ? consorcio.quantidadecotas - cotas.length : 1}
+                    value={quantidadeCotas}
+                    onChange={(e) => setQuantidadeCotas(Number(e.target.value))}
+                    required
+                    className="input"
+                    disabled={comprando}
+                  />
+                </div>
+                <button type="submit" disabled={comprando} className="btn-primary shrink-0">
+                  {comprando ? <Loader2 size={16} className="animate-spin" /> : <Ticket size={16} />} 
+                  Comprar
+                </button>
+              </form>
+              <p className="text-xs text-gray-500 mt-3">As cotas adquiridas aparecerão na sua lista de Minhas Cotas.</p>
             </div>
           )}
 
@@ -274,9 +327,9 @@ export default function ConsorcioDetailPage() {
                 <tbody className="bg-white">
                   {cotas.map((c) => (
                     <tr key={c.cot_id} className="tr-hover">
-                      <td className="td font-bold text-gray-900">#{c.cot_numero}</td>
-                      <td className="td text-gray-700">{c.usu_nome ?? c.cot_usu_id}</td>
-                      <td className="td"><Badge status={c.cot_status} /></td>
+                      <td className="td font-bold text-gray-900">#{c.numero}</td>
+                      <td className="td text-gray-700">{c.nome ?? c.usu_id}</td>
+                      <td className="td"><Badge status={c.status} /></td>
                     </tr>
                   ))}
                 </tbody>

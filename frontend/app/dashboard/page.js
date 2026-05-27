@@ -43,7 +43,7 @@ export default function DashboardPage() {
     async function load() {
       const [c, q, s] = await Promise.allSettled([
         api.get('/consorcio/meus'),
-        api.get('/cota/'),
+        api.get('/cota/minhas'),
         api.get('/saldo/administrador'),
       ])
       if (c.status === 'fulfilled') setConsorcios(c.value)
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                     <td className="td">R$ {Number(c.valorpremio).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     <td className="td"><Badge status={c.status} /></td>
                     <td className="td">
-                      <Link href={`/consorcios/${c.con_id}`} className="text-indigo-600 hover:text-indigo-500 text-sm font-medium flex items-center gap-1">
+                      <Link href={`/consorcios/${c.id}`} className="text-indigo-600 hover:text-indigo-500 text-sm font-medium flex items-center gap-1">
                         Acessar <ArrowRight size={13} />
                       </Link>
                     </td>
@@ -166,12 +166,12 @@ export default function DashboardPage() {
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {cotas.slice(0, 6).map((c) => (
-              <div key={c.cot_id} className="card flex items-center justify-between">
+              <div key={c.id} className="card flex items-center justify-between">
                 <div>
-                  <p className="font-semibold text-gray-900">Cota nº {c.cot_numero}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{c.con_nome ?? `Consórcio ${c.cot_con_id}`}</p>
+                  <p className="font-semibold text-gray-900">Cota nº {c.numero}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{c.con_nome } - { `Consórcio ${c.con_id}`}</p>
                 </div>
-                <Badge status={c.cot_status} />
+                <Badge status={c.status} />
               </div>
             ))}
           </div>
