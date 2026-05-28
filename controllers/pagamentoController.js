@@ -238,10 +238,7 @@ export default class PagamentoController {
                     amount: Math.round(valor * 100),
                     expiresIn: 3600,
                     description: `Parcela ${assembleia.numero} - ${consorcio.nome}`,
-                    customer: usuario ? {
-                        name: usuario.nome,
-                        email: usuario.email
-                    } : undefined,
+                    customer: undefined,
                     externalId: pag_id
                 });
             }
