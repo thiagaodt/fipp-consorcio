@@ -16,13 +16,13 @@ export default function EditarConsorcioPage() {
   useEffect(() => {
     api.get(`/consorcio/${id}`).then((c) => {
       setForm({
-        nome: c.con_nome,
-        quantidadecotas: c.con_quantidadecotas,
-        valorpremio: c.con_valorpremio,
-        taxaadministracao: c.con_taxaadministracao,
-        fundoreserva: c.con_fundoreserva,
-        diaassembleia: c.con_diaassembleia,
-        datainicio: c.con_datainicio?.slice(0, 10),
+        nome: c.nome,
+        quantidadecotas: c.quantidadecotas,
+        valorpremio: c.valorpremio,
+        taxaadministracao: c.taxaadministracao,
+        fundoreserva: c.fundoreserva,
+        diaassembleia: c.diaassembleia,
+        datainicio: c.datainicio?.slice(0, 10),
       })
     })
   }, [id])
