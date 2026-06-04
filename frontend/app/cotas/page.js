@@ -47,12 +47,31 @@ export default function CotasPage() {
     setPixLoading(`${cot_id}-${ass_id}`);
     try {
       const res = await api.post('/pagamento/pix', { cot_id, ass_id });
-      setPixData(res.pix?.data || res.pix);
+      const pd = res.pix?.data || res.pix;
+      pd.pag_id = res.pag_id;
+      setPixData(pd);
       setMsg(`PIX gerado com sucesso! Valor: R$ ${Number(res.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}.`);
     } catch (err) {
       setErro(err.message);
     } finally {
       setPixLoading(null);
+    }
+  }
+
+  async function simularPagamentoDev() {
+    if (!pixData || !pixData.pag_id) return;
+    try {
+      await api.post('/pagamento/webhook', {
+        pag_id: pixData.pag_id,
+        status: "CONFIRMADO"
+      });
+      setMsg("Pagamento simulado com sucesso! Atualizando...");
+      setPixData(null);
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      setErro(err.message);
     }
   }
 
@@ -90,25 +109,25 @@ export default function CotasPage() {
         <div className="card flex flex-col items-center justify-center p-6 space-y-4 bg-indigo-50 border border-indigo-100">
           <h3 className="font-semibold text-lg text-indigo-900">Pague via PIX</h3>
           <p className="text-sm text-indigo-700 text-center">Escaneie o QR Code abaixo ou copie o código Copia e Cola para realizar o pagamento.</p>
-          {pixData.qrCodeUrl && (
+          {pixData.brCodeBase64 && (
             <div className="bg-white p-2 rounded-xl border border-indigo-200">
-              <img src={pixData.qrCodeUrl} alt="QR Code PIX" className="w-48 h-48" />
+              <img src={pixData.brCodeBase64} alt="QR Code PIX" className="w-48 h-48" />
             </div>
           )}
-          {pixData.qrCode && (
+          {pixData.brCode && (
             <div className="w-full max-w-md flex flex-col gap-2">
               <span className="text-xs font-semibold uppercase text-indigo-700">PIX Copia e Cola</span>
               <div className="flex bg-white border border-indigo-200 rounded-lg overflow-hidden">
                 <input 
                   type="text" 
                   readOnly 
-                  value={pixData.qrCode} 
+                  value={pixData.brCode} 
                   className="w-full text-xs p-3 text-gray-700 outline-none bg-transparent"
                 />
                 <button 
                   className="bg-indigo-600 text-white px-4 text-xs font-medium hover:bg-indigo-700 transition"
                   onClick={() => {
-                    navigator.clipboard.writeText(pixData.qrCode);
+                    navigator.clipboard.writeText(pixData.brCode);
                     setMsg('Código PIX copiado!');
                   }}
                 >
@@ -116,6 +135,14 @@ export default function CotasPage() {
                 </button>
               </div>
             </div>
+          )}
+          {pixData.devMode && (
+            <button 
+              onClick={simularPagamentoDev}
+              className="mt-4 w-full max-w-md bg-purple-100 hover:bg-purple-200 text-purple-700 border border-purple-300 font-semibold py-2 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm"
+            >
+              <CheckCircle2 size={16} /> Simular Confirmação do Pagamento (Dev)
+            </button>
           )}
         </div>
       )}
@@ -134,15 +161,9 @@ export default function CotasPage() {
             const pags = pagamentos[cota.id] ?? []
             const assems = assembleias[cota.id] ?? []
             
-            const assembleiasNaoPagas = assems.filter(a => {
-              const payment = pags.find(p => p.pag_ass_id === a.id)
-              return !payment || payment.pag_status !== 'CONFIRMADO'
-            })
-            assembleiasNaoPagas.sort((a, b) => a.numero - b.numero)
-
-            const corrente = assembleiasNaoPagas.length > 0 ? assembleiasNaoPagas[0] : null
-            const futuras = assembleiasNaoPagas.length > 1 ? assembleiasNaoPagas.slice(1) : []
-            const isOpen = expanded[cota.id]
+            const assembleiasSorted = [...assems].sort((a,b) => a.numero - b.numero);
+            const isOpen = expanded[cota.id];
+            let hasFoundCurrent = false;
 
             return (
               <div key={cota.id} className="card space-y-4">
@@ -159,109 +180,92 @@ export default function CotasPage() {
                   </div>
                   <div className="flex items-center gap-3">
                     <Badge status={cota.status} />
-                    {corrente && (
-                      <span className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
-                        1 parcela do mês
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                {/* Pagamento Corrente */}
-                {corrente && (
-                  <div className="rounded-xl bg-amber-50 ring-1 ring-amber-100 divide-y divide-amber-100 overflow-hidden">
-                    <div className="px-4 py-2.5">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Pagar Assembleia do Mês</p>
-                    </div>
-                    <div className="flex items-center justify-between px-4 py-3">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          Assembleia nº {corrente.numero}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">Vencimento próximo</p>
-                      </div>
-                      <button
-                        onClick={() => handlePix(cota.id, corrente.id)}
-                        disabled={pixLoading === `${cota.id}-${corrente.id}`}
-                        className="btn-primary text-xs px-3 py-2"
-                      >
-                        {pixLoading === `${cota.id}-${corrente.id}`
-                          ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
-                          : <><QrCode size={13} /> Pagar agora</>
-                        }
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Pagamentos Futuros (Adiantamento) */}
-                {futuras.length > 0 && (
-                  <div className="rounded-xl bg-blue-50 ring-1 ring-blue-100 divide-y divide-blue-100 overflow-hidden mt-4">
-                    <div className="px-4 py-2.5">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">Adiantar Parcelas Futuras</p>
-                    </div>
-                    {futuras.map((a) => {
-                      const key = `${cota.id}-${a.id}`
-                      return (
-                        <div key={a.id} className="flex items-center justify-between px-4 py-3">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              Assembleia nº {a.numero}
-                            </p>
-                          </div>
-                          <button
-                            onClick={() => handlePix(cota.id, a.id)}
-                            disabled={pixLoading === key}
-                            className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 rounded-lg text-xs px-3 py-2 font-medium transition"
-                          >
-                            {pixLoading === key
-                              ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
-                              : <><QrCode size={13} /> Adiantar</>
-                            }
-                          </button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Histórico colapsável */}
-                {pags.length > 0 && (
-                  <div>
-                    <button
+                {/* Cronograma de Parcelas / Assembleias */}
+                <div className="rounded-xl ring-1 ring-gray-200 divide-y divide-gray-100 overflow-hidden mt-4">
+                   <button 
                       onClick={() => toggleExpanded(cota.id)}
-                      className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                      Histórico de pagamentos ({pags.length})
-                    </button>
+                      className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                   >
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-700">
+                         Cronograma de Parcelas ({assembleiasSorted.length})
+                      </p>
+                      {isOpen ? <ChevronUp size={16} className="text-gray-500" /> : <ChevronDown size={16} className="text-gray-500" />}
+                   </button>
+                   {isOpen && assembleiasSorted.map(a => {
+                      const payment = pags.find(p => p.ass_id === a.id);
+                      const isPaid = payment && payment.status === 'CONFIRMADO';
+                      const key = `${cota.id}-${a.id}`;
+                      const dataVencimento = a.data ? new Date(a.data).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '—';
+                      
+                      let rowBg = 'bg-white';
+                      let btn = null;
+                      let statusText = '';
+                      let statusColor = '';
 
-                    {isOpen && (
-                      <div className="mt-3 table-wrapper">
-                        <table className="min-w-full">
-                          <thead>
-                            <tr>
-                              <th className="th">Assembleia</th>
-                              <th className="th">Valor</th>
-                              <th className="th">Status</th>
-                              <th className="th">Data Pagamento</th>
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white">
-                            {pags.map((p) => (
-                              <tr key={p.pag_id} className="tr-hover">
-                                <td className="td font-medium text-gray-900">nº {p.ass_numero ?? p.pag_ass_id}</td>
-                                <td className="td">R$ {Number(p.pag_valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                                <td className="td"><Badge status={p.pag_status} /></td>
-                                <td className="td text-gray-500">{p.pag_datapagamento?.slice(0, 10) ?? '—'}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                )}
+                      if (isPaid) {
+                         rowBg = 'bg-emerald-50';
+                         statusText = 'Pago em ' + (payment.datapagamento ? new Date(payment.datapagamento).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : dataVencimento);
+                         statusColor = 'text-emerald-700';
+                         btn = (
+                            <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-700">
+                               <CheckCircle2 size={16} /> Pago
+                            </span>
+                         );
+                      } else {
+                         if (!hasFoundCurrent) {
+                            hasFoundCurrent = true;
+                            // Corrente
+                            rowBg = 'bg-amber-50/60';
+                            statusText = 'Vencimento: ' + dataVencimento;
+                            statusColor = 'text-amber-700';
+                            btn = (
+                                <button
+                                    onClick={() => handlePix(cota.id, a.id)}
+                                    disabled={pixLoading === key}
+                                    className="btn-primary text-xs px-3 py-2"
+                                  >
+                                    {pixLoading === key
+                                      ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
+                                      : <><QrCode size={13} /> Pagar agora</>
+                                    }
+                                  </button>
+                            );
+                         } else {
+                            // Futuras
+                            rowBg = 'bg-blue-50/30';
+                            statusText = 'Vencimento: ' + dataVencimento;
+                            statusColor = 'text-blue-600';
+                            btn = (
+                                <button
+                                    onClick={() => handlePix(cota.id, a.id)}
+                                    disabled={pixLoading === key}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 rounded-lg text-xs px-3 py-2 font-medium transition"
+                                  >
+                                    {pixLoading === key
+                                      ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
+                                      : <><QrCode size={13} /> Adiantar</>
+                                    }
+                                  </button>
+                            );
+                         }
+                      }
+
+                      return (
+                         <div key={a.id} className={`flex items-center justify-between px-4 py-3 ${rowBg}`}>
+                           <div>
+                             <p className="text-sm font-medium text-gray-900">
+                               Assembleia nº {a.numero}
+                             </p>
+                             <p className={`text-xs mt-0.5 font-medium ${statusColor}`}>{statusText}</p>
+                           </div>
+                           <div>{btn}</div>
+                         </div>
+                      )
+                   })}
+                </div>
               </div>
             )
           })}
