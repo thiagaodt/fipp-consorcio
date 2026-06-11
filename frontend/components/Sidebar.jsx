@@ -10,6 +10,7 @@ import {
   Wallet,
   LogOut,
   ChevronRight,
+  UserCircle,
 } from 'lucide-react'
 
 const NAV = [
@@ -17,6 +18,7 @@ const NAV = [
   { href: '/consorcios', label: 'Consórcios', icon: Building2 },
   { href: '/cotas', label: 'Minhas Cotas', icon: Ticket },
   { href: '/saldo', label: 'Saldo', icon: Wallet },
+  { href: '/perfil', label: 'Meu Perfil', icon: UserCircle },
 ]
 
 export default function Sidebar() {

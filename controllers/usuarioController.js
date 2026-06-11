@@ -1,6 +1,6 @@
 import UsuarioEntity from "../entities/usuarioEntity.js";
 import UsuarioRepository from "../repositories/usuarioRepository.js";
-import { usuarioSchema } from "../schemas/usuarioSchema.js";
+import { usuarioSchema, usuarioAtualizarSchema } from "../schemas/usuarioSchema.js";
 import Bcrypt from "../utils/bcrypt.js";
 
 export default class UsuarioController {
@@ -74,16 +74,18 @@ export default class UsuarioController {
 
     async atualizar(req, res) {
         try {
-            let {id} = req.params;
-            let {nome, email, senha} = req.body;
-            let validacao = usuarioSchema.safeParse(req.body);
+            let { id } = req.params;
+            let validacao = usuarioAtualizarSchema.safeParse(req.body);
             if(validacao.success) {
-                if(await this.#repositorio.buscarPorId(id)) {
+                let existente = await this.#repositorio.buscarPorId(id);
+                if(existente) {
                     let bcrypt = new Bcrypt();
-                    let hash = await bcrypt.hash(senha);
-                    let entidade = new UsuarioEntity(id, nome, email, hash);
+                    let hash = validacao.data.senha
+                        ? await bcrypt.hash(validacao.data.senha)
+                        : existente.senha;
+                    let entidade = new UsuarioEntity(id, validacao.data.nome, validacao.data.email, hash);
                     if(await this.#repositorio.alterar(entidade))
-                        res.status(200).json({msg: "Usuario alterado!"});
+                        res.status(200).json({msg: "Usuario alterado!", usuario: { id, nome: validacao.data.nome, email: validacao.data.email }});
                     else
                         throw new Error("Erro ao alterar usuario no banco de dados");
                 }
@@ -97,7 +99,6 @@ export default class UsuarioController {
                     erros: validacao.error.format()
                 });
             }
-
         }
         catch(exception) {
             console.log(exception);

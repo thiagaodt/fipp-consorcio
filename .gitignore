@@ -151,3 +151,7 @@ swagger.js
 
 # Ia
 * .claude
+
+# Yaml files with secrets
+*.yaml
+*.yml
