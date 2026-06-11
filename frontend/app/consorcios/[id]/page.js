@@ -120,7 +120,7 @@ export default function ConsorcioDetailPage() {
   }
 
   async function handleDelete() {
-    if (!confirm(`Excluir o consórcio "${consorcio.con_nome}"? Esta ação não pode ser desfeita.`)) return
+    if (!confirm(`Excluir o consórcio "${consorcio.nome}"? Esta ação não pode ser desfeita.`)) return
     try {
       await api.delete(`/consorcio/${id}`)
       router.push('/consorcios')
@@ -421,19 +421,19 @@ export default function ConsorcioDetailPage() {
                 </thead>
                 <tbody className="bg-white">
                   {movimentos.map((m) => (
-                    <tr key={m.moc_id} className="tr-hover">
-                      <td className="td text-gray-500">{m.moc_data?.slice(0, 10)}</td>
+                    <tr key={m.id} className="tr-hover">
+                      <td className="td text-gray-500">{m.data?.slice(0, 10)}</td>
                       <td className="td">
                         <div className="flex items-center gap-2">
-                          {m.moc_tipo === 'ENTRADA'
+                          {m.tipo === 'ENTRADA'
                             ? <TrendingUp size={14} className="text-emerald-600" />
                             : <TrendingDown size={14} className="text-red-500" />
                           }
-                          <Badge status={m.moc_tipo} />
+                          <Badge status={m.tipo} />
                         </div>
                       </td>
-                      <td className={`td text-right font-semibold ${m.moc_tipo === 'ENTRADA' ? 'text-emerald-600' : 'text-red-600'}`}>
-                        {m.moc_tipo === 'ENTRADA' ? '+' : '-'} R$ {Number(m.moc_valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      <td className={`td text-right font-semibold ${m.tipo === 'ENTRADA' ? 'text-emerald-600' : 'text-red-600'}`}>
+                        {m.tipo === 'ENTRADA' ? '+' : '-'} R$ {Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </td>
                     </tr>
                   ))}
