@@ -9,6 +9,7 @@ export default class MovimentacaoAdministradorEntity extends Base {
     #tipo;
     #valor;
     #data;
+    #con_nome;
 
     get id() { return this.#id } set id(value) { this.#id = value }
     get usu_id() { return this.#usu_id } set usu_id(value) { this.#usu_id = value }
@@ -17,8 +18,9 @@ export default class MovimentacaoAdministradorEntity extends Base {
     get tipo() { return this.#tipo } set tipo(value) { this.#tipo = value }
     get valor() { return this.#valor } set valor(value) { this.#valor = value }
     get data() { return this.#data } set data(value) { this.#data = value }
+    get con_nome() { return this.#con_nome } set con_nome(value) { this.#con_nome = value }
 
-    constructor(mva_id, usu_id, con_id, pag_id, mva_tipo, mva_valor, mva_data) {
+    constructor(mva_id, usu_id, con_id, pag_id, mva_tipo, mva_valor, mva_data, con_nome) {
         super();
         this.#id = mva_id;
         this.#usu_id = usu_id;
@@ -27,5 +29,6 @@ export default class MovimentacaoAdministradorEntity extends Base {
         this.#tipo = mva_tipo;
         this.#valor = mva_valor;
         this.#data = mva_data;
+        this.#con_nome = con_nome ?? null;
     }
 }

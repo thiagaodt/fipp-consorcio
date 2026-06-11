@@ -53,8 +53,8 @@ export default function SaldoPage() {
     }
   }
 
-  const totalCreditos = movimentos.filter(m => m.moa_tipo === 'CREDITO').reduce((acc, m) => acc + Number(m.moa_valor), 0)
-  const totalSaques = movimentos.filter(m => m.moa_tipo === 'SAQUE').reduce((acc, m) => acc + Number(m.moa_valor), 0)
+  const totalCreditos = movimentos.filter(m => m.tipo === 'CREDITO').reduce((acc, m) => acc + Number(m.valor), 0)
+  const totalSaques = movimentos.filter(m => m.tipo === 'SAQUE').reduce((acc, m) => acc + Number(m.valor), 0)
 
   if (loading) {
     return (
@@ -168,20 +168,20 @@ export default function SaldoPage() {
               </thead>
               <tbody className="bg-white">
                 {movimentos.map((m) => (
-                  <tr key={m.moa_id} className="tr-hover">
-                    <td className="td text-gray-500">{m.moa_data?.slice(0, 10)}</td>
+                  <tr key={m.id} className="tr-hover">
+                    <td className="td text-gray-500">{m.data?.slice(0, 10)}</td>
                     <td className="td">
                       <div className="flex items-center gap-2">
-                        {m.moa_tipo === 'CREDITO'
+                        {m.tipo === 'CREDITO'
                           ? <TrendingUp size={14} className="text-emerald-600" />
                           : <TrendingDown size={14} className="text-red-500" />
                         }
-                        <Badge status={m.moa_tipo} />
+                        <Badge status={m.tipo} />
                       </div>
                     </td>
                     <td className="td text-gray-600">{m.con_nome ?? '—'}</td>
-                    <td className={`td text-right font-semibold ${m.moa_tipo === 'CREDITO' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {m.moa_tipo === 'CREDITO' ? '+' : '-'} R$ {Number(m.moa_valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    <td className={`td text-right font-semibold ${m.tipo === 'CREDITO' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {m.tipo === 'CREDITO' ? '+' : '-'} R$ {Number(m.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))}

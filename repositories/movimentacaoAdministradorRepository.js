@@ -17,15 +17,18 @@ export default class MovimentacaoAdministradorRepository {
             row["pag_id"],
             row["mva_tipo"],
             row["mva_valor"],
-            row["mva_data"]
+            row["mva_data"],
+            row["con_nome"] ?? null
         );
     }
 
     async listarPorUsuario(usu_id) {
         const sql = `
-            SELECT * FROM tb_movimentacaoadministrador
-            WHERE usu_id = ?
-            ORDER BY mva_data DESC
+            SELECT m.*, c.con_nome
+            FROM tb_movimentacaoadministrador m
+            LEFT JOIN tb_consorcio c ON c.con_id = m.con_id
+            WHERE m.usu_id = ?
+            ORDER BY m.mva_data DESC
         `;
         const params = [usu_id];
         const rows = await this.#banco.ExecutaComando(sql, params);
