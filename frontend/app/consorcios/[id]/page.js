@@ -372,7 +372,7 @@ export default function ConsorcioDetailPage() {
                 <div className="mt-4 pt-4 border-t border-indigo-100">
                   {corrente.podeRealizarSorteio ? (
                     <button
-                      onClick={() => handleSorteio(corrente.assembleia.ass_id)}
+                      onClick={() => handleSorteio(corrente.assembleia.id)}
                       disabled={sorteioLoading}
                       className="btn-primary"
                     >
