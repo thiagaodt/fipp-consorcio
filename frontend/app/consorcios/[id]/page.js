@@ -8,7 +8,7 @@ import Badge from '@/components/Badge'
 import {
   ChevronLeft, Pencil, Trash2, Users, CalendarDays,
   Wallet, Trophy, AlertCircle, CheckCircle2, Loader2,
-  UserPlus, Dice5, TrendingUp, TrendingDown, Ticket
+  Dice5, TrendingUp, TrendingDown, Ticket
 } from 'lucide-react'
 
 const TABS = ['Informações', 'Cotas', 'Assembleias', 'Saldo']
@@ -35,11 +35,9 @@ export default function ConsorcioDetailPage() {
   const [corrente, setCorrente] = useState(null)
   const [saldo, setSaldo] = useState(null)
   const [movimentos, setMovimentos] = useState([])
-  const [usuarios, setUsuarios] = useState([])
   const [erro, setErro] = useState('')
   const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(true)
-  const [novaCota, setNovaCota] = useState({ usu_id: '' })
   const [sorteioLoading, setSorteioLoading] = useState(false)
   const [quantidadeCotas, setQuantidadeCotas] = useState(1)
   const [comprando, setComprando] = useState(false)
@@ -49,12 +47,8 @@ export default function ConsorcioDetailPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [c, u] = await Promise.all([
-          api.get(`/consorcio/${id}`),
-          api.get('/usuario'),
-        ])
+        const c = await api.get(`/consorcio/${id}`)
         setConsorcio(c)
-        setUsuarios(u)
       } catch (e) {
         setErro(e.message)
       } finally {
@@ -88,17 +82,6 @@ export default function ConsorcioDetailPage() {
     ])
     if (s.status === 'fulfilled') setSaldo(s.value)
     if (m.status === 'fulfilled') setMovimentos(m.value)
-  }
-
-  async function handleAddCota(e) {
-    e.preventDefault()
-    setErro(''); setMsg('')
-    try {
-      const res = await api.post('/cota', { con_id: Number(id), usu_id: Number(novaCota.usu_id) })
-      setMsg(`Cota nº ${res.cot_numero} adicionada com sucesso.`)
-      setNovaCota({ usu_id: '' })
-      loadCotas()
-    } catch (err) { setErro(err.message) }
   }
 
   async function handleComprarCotas(e) {
@@ -256,34 +239,7 @@ export default function ConsorcioDetailPage() {
       {/* ── Tab: Cotas ── */}
       {tab === 'Cotas' && (
         <div className="space-y-5">
-          {isAdmin && consorcio.status !== 'FINALIZADO' && (
-            <div className="card">
-              <h2 className="section-title mb-4">Adicionar Cota</h2>
-              <form onSubmit={handleAddCota} className="flex items-end gap-3">
-                <div className="flex-1">
-                  <label className="label">Participante</label>
-                  <select
-                    value={novaCota.usu_id}
-                    onChange={(e) => setNovaCota({ id: e.target.value })}
-                    required
-                    className="input"
-                  >
-                    <option value="">Selecione um usuário</option>
-                    {usuarios.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.nome} — {u.email}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <button type="submit" className="btn-primary shrink-0">
-                  <UserPlus size={16} /> Adicionar
-                </button>
-              </form>
-            </div>
-          )}
-
-          {!isAdmin && consorcio.status !== 'FINALIZADO' && (
+          {consorcio.status !== 'FINALIZADO' && (
             <div className="card border border-indigo-100 bg-indigo-50/30">
               <h2 className="section-title mb-4">Adquirir Cotas</h2>
               <form onSubmit={handleComprarCotas} className="flex items-end gap-3 max-w-sm">

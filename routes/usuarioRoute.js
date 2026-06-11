@@ -8,13 +8,21 @@ let ctrl = new UsuarioController();
 let auth = new AuthMiddleware();
 
 usuarioRouter.get("/", auth.validarToken, (req, res) => {
-    /* #swagger.security = [{
-        "bearerAuth": []
-    }]
-    */
     // #swagger.tags = ['Usuário']
-    // #swagger.summary = 'Lista todos os usuários cadastrados'
+    // #swagger.summary = 'Lista usuários ativos'
     ctrl.listar(req, res);
+})
+
+usuarioRouter.get("/todos", auth.validarToken, (req, res) => {
+    // #swagger.tags = ['Usuário']
+    // #swagger.summary = 'Lista todos os usuários (ativos e inativos) — admin'
+    ctrl.listarTodos(req, res);
+})
+
+usuarioRouter.patch("/:id/ativo", auth.validarToken, (req, res) => {
+    // #swagger.tags = ['Usuário']
+    // #swagger.summary = 'Ativa ou desativa um usuário'
+    ctrl.toggleAtivo(req, res);
 })
 
 usuarioRouter.post("/", (req, res) => {

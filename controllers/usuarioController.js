@@ -16,7 +16,7 @@ export default class UsuarioController {
             let lista = await this.#repositorio.listar();
             if(lista.length > 0)
                 res.status(200).json(lista);
-            else 
+            else
                 res.status(404).json({msg: "Nenhum usuario foi encontrado!"});
         }
         catch(exception) {
@@ -25,14 +25,45 @@ export default class UsuarioController {
         }
     }
 
+    async listarTodos(req, res) {
+        try {
+            let lista = await this.#repositorio.listarTodos();
+            res.status(200).json(lista);
+        }
+        catch(exception) {
+            console.log(exception);
+            res.status(500).json({msg: "Erro ao processar requisição"});
+        }
+    }
+
+    async toggleAtivo(req, res) {
+        try {
+            const { id } = req.params;
+            const usuario = await this.#repositorio.buscarPorId(id);
+            if(!usuario) {
+                return res.status(404).json({msg: "Usuário não encontrado"});
+            }
+            if(usuario.id === req.usuarioLogado?.id) {
+                return res.status(400).json({msg: "Não é possível alterar o próprio status"});
+            }
+            const novoAtivo = usuario.ativo === 'S' ? 'N' : 'S';
+            await this.#repositorio.alterarAtivo(id, novoAtivo);
+            return res.status(200).json({ msg: `Usuário ${novoAtivo === 'S' ? 'reativado' : 'desativado'} com sucesso`, ativo: novoAtivo });
+        }
+        catch(exception) {
+            console.log(exception);
+            return res.status(500).json({msg: exception.message});
+        }
+    }
+
     async cadastrar(req, res) {
         try {
-            let {nome, email, senha} = req.body;
             let validacao = usuarioSchema.safeParse(req.body);
             if(validacao.success) {
+                let { nome, email, senha, perfil } = validacao.data;
                 let bcrypt = new Bcrypt();
                 let hash = await bcrypt.hash(senha);
-                let entidade = new UsuarioEntity(null, nome, email, hash, 'S');
+                let entidade = new UsuarioEntity(null, nome, email, hash, 'S', perfil ?? 'PADRAO');
                 let success = await this.#repositorio.cadastrar(entidade);
                 if(success)
                     return res.status(200).json({msg: "Usuario cadastrado com sucesso"});
@@ -83,7 +114,7 @@ export default class UsuarioController {
                     let hash = validacao.data.senha
                         ? await bcrypt.hash(validacao.data.senha)
                         : existente.senha;
-                    let entidade = new UsuarioEntity(id, validacao.data.nome, validacao.data.email, hash);
+                    let entidade = new UsuarioEntity(id, validacao.data.nome, validacao.data.email, hash, existente.ativo, validacao.data.perfil ?? existente.perfil);
                     if(await this.#repositorio.alterar(entidade))
                         res.status(200).json({msg: "Usuario alterado!", usuario: { id, nome: validacao.data.nome, email: validacao.data.email }});
                     else

@@ -7,7 +7,8 @@ create table tb_usuario (
     usu_nome varchar(200),
     usu_email varchar(200),
     usu_senha varchar(32),
-    usu_ativo enum('S', 'N')
+    usu_ativo enum('S', 'N'),
+    usu_perfil enum('ADMINISTRADOR', 'PADRAO') not null default 'PADRAO'
 );
 
 create table tb_consorcio (

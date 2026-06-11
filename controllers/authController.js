@@ -17,7 +17,7 @@ export default class AuthController {
             let {email, senha} = req.body;
             if(email && senha) {
                 let usuario = await this.#usuarioRepository.buscarPorEmail(email);
-                if(usuario && usuario.ativo) {
+                if(usuario && usuario.ativo === "S") {
                     let hash = await this.#bcrypt.compare(senha, usuario.senha);
                     if(hash) {
                         let auth = new AuthMiddleware();

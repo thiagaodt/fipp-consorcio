@@ -9,7 +9,11 @@ export const usuarioSchema = z.object({
             .email({ message: "Insira um endereço de e-mail válido." }),
 
     senha: z.string()
-            .min(4, { message: "A senha deve conter pelo menos 4 caracteres." })
+            .min(4, { message: "A senha deve conter pelo menos 4 caracteres." }),
+
+    perfil: z.enum(['ADMINISTRADOR', 'PADRAO'], {
+        message: "O perfil deve ser ADMINISTRADOR ou PADRAO."
+    }).optional()
 });
 
 export const usuarioAtualizarSchema = z.object({
@@ -22,7 +26,11 @@ export const usuarioAtualizarSchema = z.object({
 
     senha: z.string()
             .min(4, { message: "A senha deve conter pelo menos 4 caracteres." })
-            .optional()
+            .optional(),
+
+    perfil: z.enum(['ADMINISTRADOR', 'PADRAO'], {
+        message: "O perfil deve ser ADMINISTRADOR ou PADRAO."
+    }).optional()
 });
 
 

@@ -11,9 +11,10 @@ import {
   LogOut,
   ChevronRight,
   UserCircle,
+  Users,
 } from 'lucide-react'
 
-const NAV = [
+const NAV_BASE = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/consorcios', label: 'Consórcios', icon: Building2 },
   { href: '/cotas', label: 'Minhas Cotas', icon: Ticket },
@@ -21,10 +22,15 @@ const NAV = [
   { href: '/perfil', label: 'Meu Perfil', icon: UserCircle },
 ]
 
+const NAV_ADMIN = [
+  { href: '/usuarios', label: 'Usuários', icon: Users },
+]
+
 export default function Sidebar() {
   const router = useRouter()
   const pathname = usePathname()
   const user = getUser()
+  const nav = user?.perfil === 'ADMINISTRADOR' ? [...NAV_BASE, ...NAV_ADMIN] : NAV_BASE
 
   async function handleLogout() {
     try { await api.post('/auth/logout') } catch {}
@@ -47,7 +53,7 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-5 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(href + '/')
           return (
             <Link

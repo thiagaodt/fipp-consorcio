@@ -9,23 +9,23 @@ export default class UsuarioRepository {
         this.#banco = new Database();
     }
 
+    #mapear(row) {
+        return new UsuarioEntity(
+            row["usu_id"],
+            row["usu_nome"],
+            row["usu_email"],
+            row["usu_senha"],
+            row["usu_ativo"],
+            row["usu_perfil"]
+        );
+    }
+
     async buscarPorId(id) {
         const sql = "SELECT * FROM tb_usuario WHERE usu_id = ?";
         const params = [id];
         const rows = await this.#banco.ExecutaComando(sql, params);
 
-        if (rows.length > 0) {
-            const row = rows[0];
-            const usuario = new UsuarioEntity(
-                row["usu_id"],
-                row["usu_nome"],
-                row["usu_email"],
-                row["usu_senha"],
-                row["usu_ativo"]
-            );
-            return usuario;
-        }
-
+        if (rows.length > 0) return this.#mapear(rows[0]);
         return null;
     }
 
@@ -34,46 +34,39 @@ export default class UsuarioRepository {
         const params = [email];
         const rows = await this.#banco.ExecutaComando(sql, params);
 
-        if (rows.length > 0) {
-            const row = rows[0];
-            const usuario = new UsuarioEntity(
-                row["usu_id"],
-                row["usu_nome"],
-                row["usu_email"],
-                row["usu_senha"],
-                row["usu_ativo"]
-            )
-            return usuario;
-        }
+        if (rows.length > 0) return this.#mapear(rows[0]);
+        return null;
     }
 
     async listar() {
-        const sql = "SELECT * FROM tb_usuario where usu_ativo = 'S'";
+        const sql = "SELECT * FROM tb_usuario WHERE usu_ativo = 'S'";
         const rows = await this.#banco.ExecutaComando(sql);
+        return rows.map(row => this.#mapear(row));
+    }
 
-        const usuarios = rows.map(row =>
-            new UsuarioEntity(
-                row["usu_id"],
-                row["usu_nome"],
-                row["usu_email"],
-                row["usu_senha"],
-                row["usu_ativo"]
-            )
-        );
+    async listarTodos() {
+        const sql = "SELECT * FROM tb_usuario ORDER BY usu_ativo DESC, usu_nome ASC";
+        const rows = await this.#banco.ExecutaComando(sql);
+        return rows.map(row => this.#mapear(row));
+    }
 
-        return usuarios;
+    async alterarAtivo(id, ativo) {
+        const sql = "UPDATE tb_usuario SET usu_ativo = ? WHERE usu_id = ?";
+        const params = [ativo, id];
+        return await this.#banco.ExecutaComandoNonQuery(sql, params);
     }
 
     async cadastrar(usuarioEntidade) {
         const sql = `
-            INSERT INTO tb_usuario (usu_nome, usu_email, usu_senha, usu_ativo)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO tb_usuario (usu_nome, usu_email, usu_senha, usu_ativo, usu_perfil)
+            VALUES (?, ?, ?, ?, ?)
         `;
         const params = [
             usuarioEntidade.nome,
             usuarioEntidade.email,
             usuarioEntidade.senha,
-            usuarioEntidade.ativo
+            usuarioEntidade.ativo,
+            usuarioEntidade.perfil
         ];
 
         const result = await this.#banco.ExecutaComandoNonQuery(sql, params);
@@ -90,13 +83,14 @@ export default class UsuarioRepository {
     async alterar(entidadeAtualizada) {
         const sql = `
             UPDATE tb_usuario
-            SET usu_nome = ?, usu_email = ?, usu_senha = ?
+            SET usu_nome = ?, usu_email = ?, usu_senha = ?, usu_perfil = ?
             WHERE usu_id = ?
         `;
         const valores = [
             entidadeAtualizada.nome,
             entidadeAtualizada.email,
             entidadeAtualizada.senha,
+            entidadeAtualizada.perfil,
             entidadeAtualizada.id
         ];
 
