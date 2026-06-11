@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { api, isAuthenticated } from '@/lib/api'
 import Badge from '@/components/Badge'
@@ -20,6 +20,52 @@ export default function CotasPage() {
   const [msg, setMsg] = useState('')
   const [erro, setErro] = useState('')
   const [pixData, setPixData] = useState(null)
+  const [pollingAtivo, setPollingAtivo] = useState(false)
+  const pollingRef = useRef(null)
+
+  useEffect(() => {
+    if (!pixData) {
+      clearTimeout(pollingRef.current)
+      setPollingAtivo(false)
+      return
+    }
+
+    let tentativas = 0
+    const MAX_TENTATIVAS = 72 // ~6 min
+
+    function poll() {
+      if (tentativas >= MAX_TENTATIVAS) {
+        setPollingAtivo(false)
+        setErro('Tempo de espera do PIX esgotado. Gere um novo QR Code.')
+        setPixData(null)
+        return
+      }
+      tentativas++
+      api.get(`/pagamento/verificar?pag_id=${pixData.pag_id}&abacate_id=${pixData.id}`)
+        .then((r) => {
+          if (r.status === 'PAID') {
+            setPollingAtivo(false)
+            setPixData(null)
+            setMsg('Pagamento confirmado com sucesso!')
+            setTimeout(() => window.location.reload(), 1500)
+          } else if (r.status === 'EXPIRED' || r.status === 'CANCELLED') {
+            setPollingAtivo(false)
+            setPixData(null)
+            setErro('PIX expirado ou cancelado. Gere um novo QR Code.')
+          } else {
+            pollingRef.current = setTimeout(poll, 5000)
+          }
+        })
+        .catch(() => {
+          pollingRef.current = setTimeout(poll, 5000)
+        })
+    }
+
+    setPollingAtivo(true)
+    pollingRef.current = setTimeout(poll, 5000)
+
+    return () => clearTimeout(pollingRef.current)
+  }, [pixData?.id])
 
   useEffect(() => {
     if (!isAuthenticated()) { router.push('/login'); return }
@@ -59,17 +105,10 @@ export default function CotasPage() {
   }
 
   async function simularPagamentoDev() {
-    if (!pixData || !pixData.pag_id) return;
+    if (!pixData?.id) return;
     try {
-      await api.post('/pagamento/webhook', {
-        pag_id: pixData.pag_id,
-        status: "CONFIRMADO"
-      });
-      setMsg("Pagamento simulado com sucesso! Atualizando...");
-      setPixData(null);
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
+      await api.post('/pagamento/simular', { abacate_id: pixData.id });
+      setMsg('Pagamento simulado no AbacatePay. Aguardando confirmação...');
     } catch (err) {
       setErro(err.message);
     }
@@ -136,14 +175,18 @@ export default function CotasPage() {
               </div>
             </div>
           )}
-          {pixData.devMode && (
-            <button 
-              onClick={simularPagamentoDev}
-              className="mt-4 w-full max-w-md bg-purple-100 hover:bg-purple-200 text-purple-700 border border-purple-300 font-semibold py-2 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm"
-            >
-              <CheckCircle2 size={16} /> Simular Confirmação do Pagamento (Dev)
-            </button>
+          {pollingAtivo && (
+            <div className="flex items-center gap-2 text-sm text-indigo-600">
+              <Loader2 size={16} className="animate-spin" />
+              Aguardando confirmação do pagamento...
+            </div>
           )}
+          <button
+            onClick={simularPagamentoDev}
+            className="mt-2 w-full max-w-md bg-purple-100 hover:bg-purple-200 text-purple-700 border border-purple-300 font-semibold py-2 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm"
+          >
+            <CheckCircle2 size={16} /> Simular Pagamento (Dev)
+          </button>
         </div>
       )}
 

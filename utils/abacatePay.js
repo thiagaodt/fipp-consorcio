@@ -26,8 +26,8 @@ export default class AbacatePay {
             amount: amount,
             expiresIn: expiresIn ?? 3600,
             description: description ?? "Parcela de consórcio",
-            customer: customer,
-            externalId: externalId ? String(externalId) : undefined
+            ...(customer ? { customer } : {}),
+            ...(externalId ? { externalId: String(externalId) } : {})
         };
 
         const response = await fetch(url, {
@@ -45,6 +45,34 @@ export default class AbacatePay {
             throw new Error(data?.error || data?.message || `AbacatePay retornou status ${response.status}`);
         }
 
+        return data;
+    }
+
+    // Consulta o status atual de um QR Code PIX pelo ID do AbacatePay.
+    async verificarStatusPix(id) {
+        const url = `${this.#apiUrl}/v1/pixQrCode/check?id=${encodeURIComponent(id)}`;
+        const response = await fetch(url, {
+            headers: { "Authorization": `Bearer ${this.#apiKey}` }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.error || data?.message || `AbacatePay retornou status ${response.status}`);
+        }
+        // v1 envelopa em { data: { status, expiresAt }, error, success }
+        return data?.data ?? data;
+    }
+
+    // Simula o pagamento de um QR Code em ambiente de desenvolvimento.
+    async simularPagamento(id) {
+        const url = `${this.#apiUrl}/v1/pixQrCode/simulate-payment?id=${encodeURIComponent(id)}`;
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${this.#apiKey}` }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(data?.error || data?.message || `AbacatePay retornou status ${response.status}`);
+        }
         return data;
     }
 }

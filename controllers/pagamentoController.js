@@ -307,6 +307,57 @@ export default class PagamentoController {
         }
     }
 
+    async verificarPagamento(req, res) {
+        try {
+            const { pag_id, abacate_id } = req.query;
+            if (!pag_id || !abacate_id) {
+                return res.status(400).json({msg: "pag_id e abacate_id são obrigatórios"});
+            }
+
+            const pagamento = await this.#repositorio.buscarPorId(pag_id);
+            if (!pagamento) {
+                return res.status(404).json({msg: "Pagamento não encontrado"});
+            }
+            if (pagamento.status === "CONFIRMADO") {
+                return res.status(200).json({status: "PAID", confirmado: true});
+            }
+
+            let abacateStatus;
+            try {
+                abacateStatus = await this.#abacatePay.verificarStatusPix(abacate_id);
+            } catch (err) {
+                return res.status(502).json({msg: "Falha ao consultar AbacatePay", detalhe: err.message});
+            }
+
+            if (abacateStatus?.status === "PAID") {
+                await this.#repositorio.confirmarPagamento(Number(pag_id), new Date());
+                await this.#aplicarDivisao(pagamento);
+                return res.status(200).json({status: "PAID", confirmado: true});
+            }
+
+            return res.status(200).json({status: abacateStatus?.status ?? "PENDING", confirmado: false});
+        }
+        catch(exception) {
+            console.log(exception);
+            return res.status(500).json({msg: exception.message});
+        }
+    }
+
+    async simularDev(req, res) {
+        try {
+            const { abacate_id } = req.body;
+            if (!abacate_id) {
+                return res.status(400).json({msg: "abacate_id é obrigatório"});
+            }
+            await this.#abacatePay.simularPagamento(abacate_id);
+            return res.status(200).json({msg: "Pagamento simulado no AbacatePay com sucesso"});
+        }
+        catch(exception) {
+            console.log(exception);
+            return res.status(500).json({msg: exception.message});
+        }
+    }
+
     async #aplicarDivisao(pagamento) {
         const cota = await this.#cotaRepository.buscarPorId(pagamento.cot_id);
         if(!cota) throw new Error("Cota associada ao pagamento não encontrada");

@@ -57,6 +57,18 @@ pagamentoRouter.post("/pix", auth.validarToken, (req, res) => {
     ctrl.gerarPix(req, res);
 })
 
+pagamentoRouter.get("/verificar", auth.validarToken, (req, res) => {
+    // #swagger.tags = ['Pagamento']
+    // #swagger.summary = 'Consulta status do PIX no AbacatePay e confirma se pago'
+    ctrl.verificarPagamento(req, res);
+})
+
+pagamentoRouter.post("/simular", auth.validarToken, (req, res) => {
+    // #swagger.tags = ['Pagamento']
+    // #swagger.summary = 'Simula pagamento PIX no AbacatePay (dev)'
+    ctrl.simularDev(req, res);
+})
+
 pagamentoRouter.post("/webhook", (req, res) => {
     // #swagger.tags = ['Pagamento']
     // #swagger.summary = 'Webhook do AbacatePay para confirmação de pagamento'
