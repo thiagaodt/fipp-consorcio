@@ -1,11 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { api, saveAuth } from '@/lib/api'
 import { Building2, Mail, Lock, ArrowRight, AlertCircle, User, CheckCircle2 } from 'lucide-react'
 
+// useSearchParams precisa de Suspense para o build de produção (next build).
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginConteudo />
+    </Suspense>
+  )
+}
+
+function LoginConteudo() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const expired = searchParams.get('expired')

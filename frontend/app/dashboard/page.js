@@ -136,7 +136,7 @@ export default function DashboardPage() {
               </thead>
               <tbody className="bg-white">
                 {consorcios.map((c) => (
-                  <tr key={c.con_id} className="tr-hover">
+                  <tr key={c.id} className="tr-hover">
                     <td className="td font-medium text-gray-900">{c.nome}</td>
                     <td className="td">{c.quantidadecotas}</td>
                     <td className="td">R$ {Number(c.valormensal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
