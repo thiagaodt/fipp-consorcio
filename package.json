@@ -17,7 +17,8 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "api": "node swagger.js && node server.js",
-    "teste:abacate": "node scripts/test-abacate.js"
+    "teste:abacate": "node scripts/test-abacate.js",
+    "criar-admin": "node scripts/criar-admin.js"
   },
   "name": "fipp-consorcio",
   "version": "1.0.0",

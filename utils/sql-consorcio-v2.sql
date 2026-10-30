@@ -1,4 +1,4 @@
-create database consorcio;
+create database consorcio character set utf8mb4 collate utf8mb4_unicode_ci;
 
 use consorcio;
 
@@ -111,6 +111,3 @@ create table tb_movimentacaoadministrador (
 );
 
 
--- Administrador de teste (senha: admin123). Troque a senha depois do primeiro acesso.
-insert into tb_usuario (usu_nome, usu_email, usu_senha, usu_ativo, usu_perfil)
-values ('Administrador', 'admin@exemplo.com', '$2b$10$821G4WwV4LP0/iAaMVpt3O31.E9auYm6a8yKfrUcigwxP1.oZRyOq', 'S', 'ADMINISTRADOR');
