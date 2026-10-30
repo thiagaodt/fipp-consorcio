@@ -17,7 +17,8 @@ export default class PagamentoRepository {
             row["pag_status"],
             row["pag_datageracao"],
             row["pag_datapagamento"],
-            row["pag_valor"]
+            row["pag_valor"],
+            row["pag_abacateid"]
         );
     }
 
@@ -122,6 +123,11 @@ export default class PagamentoRepository {
 
         const result = await this.#banco.ExecutaComandoNonQuery(sql, valores);
         return result;
+    }
+
+    async registrarAbacateId(id, abacateId) {
+        const sql = "UPDATE tb_pagamento SET pag_abacateid = ? WHERE pag_id = ?";
+        return await this.#banco.ExecutaComandoNonQuery(sql, [abacateId, id]);
     }
 
     async confirmarPagamento(id, dataPagamento) {

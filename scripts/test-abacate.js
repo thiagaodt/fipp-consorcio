@@ -1,4 +1,5 @@
-import AbacatePay from "./utils/abacatePay.js";
+import "../utils/env.js";
+import AbacatePay from "../utils/abacatePay.js";
 
 const abacate = new AbacatePay();
 

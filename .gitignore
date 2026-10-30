@@ -147,10 +147,9 @@ vite.config.ts.timestamp-*
 
 # Swagger
 swagger_output.json
-swagger.js
 
 # Ia
-* .claude
+.claude/
 
 # Yaml files with secrets
 *.yaml

@@ -1,7 +1,10 @@
 import jwt from 'jsonwebtoken';
 import UsuarioRepository from '../repositories/usuarioRepository.js';
 
-const SECRET = "***REMOVIDO***";
+const SECRET = process.env.JWT_SECRET;
+if (!SECRET) {
+    throw new Error("JWT_SECRET não está definida. Copie o .env.example para .env e preencha.");
+}
 
 export default class AuthMiddleware {
     gerarToken(id, email, nome) {
@@ -17,6 +20,33 @@ export default class AuthMiddleware {
         })
 
         return jsonWebToken;
+    }
+
+    // Use depois de validarToken.
+    exigirAdmin(req, res, next) {
+        if(req.usuarioLogado?.perfil !== 'ADMINISTRADOR') {
+            return res.status(403).json({msg: "Acesso restrito a administradores"});
+        }
+        next();
+    }
+
+    // Identifica o usuário quando há token válido, sem bloquear a rota (ex.: cadastro público).
+    async identificarOpcional(req, res, next) {
+        let token = req.cookies.token;
+        if(!token && req.headers.authorization) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+        if(token) {
+            try {
+                let payload = jwt.verify(token, SECRET);
+                let usuarioRepository = new UsuarioRepository();
+                req.usuarioLogado = await usuarioRepository.buscarPorId(payload.id) ?? undefined;
+            }
+            catch(ex) {
+                req.usuarioLogado = undefined;
+            }
+        }
+        next();
     }
 
     async validarToken(req, res, next) {

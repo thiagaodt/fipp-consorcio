@@ -1,7 +1,3 @@
-import dotenv from "dotenv";
-
-dotenv.config();
-
 const ABACATE_API_URL = process.env.ABACATE_API_URL || "https://api.abacatepay.com";
 const ABACATE_API_KEY = process.env.ABACATE_API_KEY;
 

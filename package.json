@@ -15,14 +15,15 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node --es-module-specifier-resolution=node server.js",
-    "api": "node swagger.js && node --es-module-specifier-resolution=node server.js"
+    "dev": "node --watch server.js",
+    "api": "node swagger.js && node server.js",
+    "teste:abacate": "node scripts/test-abacate.js"
   },
-  "name": "pfs2",
+  "name": "fipp-consorcio",
   "version": "1.0.0",
   "main": "server.js",
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": "Thiago Enrico Costa Cardoso",
+  "license": "MIT",
+  "description": "Sistema de consórcios com cotas, assembleias, saldos e pagamento PIX via AbacatePay — Express, MySQL e Next.js.",
   "type": "module"
 }

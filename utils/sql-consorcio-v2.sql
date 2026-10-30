@@ -6,7 +6,7 @@ create table tb_usuario (
 	usu_id int primary key auto_increment,
     usu_nome varchar(200),
     usu_email varchar(200),
-    usu_senha varchar(32),
+    usu_senha varchar(255),
     usu_ativo enum('S', 'N'),
     usu_perfil enum('ADMINISTRADOR', 'PADRAO') not null default 'PADRAO'
 );
@@ -58,6 +58,7 @@ create table tb_pagamento (
     pag_datageracao datetime,
     pag_datapagamento datetime,
     pag_valor decimal(10,2),
+    pag_abacateid varchar(100),
     
     constraint fk_pagamento_cota foreign key (cot_id) references tb_cota (cot_id),
     constraint fk_pagamento_assembleia foreign key (ass_id) references tb_assembleia (ass_id)
@@ -109,3 +110,7 @@ create table tb_movimentacaoadministrador (
     CONSTRAINT fk_movadm_pagamento  FOREIGN KEY (pag_id) REFERENCES tb_pagamento (pag_id)
 );
 
+
+-- Administrador de teste (senha: admin123). Troque a senha depois do primeiro acesso.
+insert into tb_usuario (usu_nome, usu_email, usu_senha, usu_ativo, usu_perfil)
+values ('Administrador', 'admin@exemplo.com', '$2b$10$821G4WwV4LP0/iAaMVpt3O31.E9auYm6a8yKfrUcigwxP1.oZRyOq', 'S', 'ADMINISTRADOR');

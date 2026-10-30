@@ -61,9 +61,11 @@ export default class UsuarioController {
             let validacao = usuarioSchema.safeParse(req.body);
             if(validacao.success) {
                 let { nome, email, senha, perfil } = validacao.data;
+                // Só um administrador logado pode criar outro administrador.
+                const ehAdmin = req.usuarioLogado?.perfil === 'ADMINISTRADOR';
                 let bcrypt = new Bcrypt();
                 let hash = await bcrypt.hash(senha);
-                let entidade = new UsuarioEntity(null, nome, email, hash, 'S', perfil ?? 'PADRAO');
+                let entidade = new UsuarioEntity(null, nome, email, hash, 'S', ehAdmin ? (perfil ?? 'PADRAO') : 'PADRAO');
                 let success = await this.#repositorio.cadastrar(entidade);
                 if(success)
                     return res.status(200).json({msg: "Usuario cadastrado com sucesso"});
@@ -106,6 +108,11 @@ export default class UsuarioController {
     async atualizar(req, res) {
         try {
             let { id } = req.params;
+            // Usuário comum só altera o próprio cadastro e não muda o próprio perfil.
+            const ehAdmin = req.usuarioLogado?.perfil === 'ADMINISTRADOR';
+            if(!ehAdmin && String(req.usuarioLogado?.id) !== String(id)) {
+                return res.status(403).json({msg: "Você só pode alterar o próprio cadastro"});
+            }
             let validacao = usuarioAtualizarSchema.safeParse(req.body);
             if(validacao.success) {
                 let existente = await this.#repositorio.buscarPorId(id);
@@ -114,7 +121,7 @@ export default class UsuarioController {
                     let hash = validacao.data.senha
                         ? await bcrypt.hash(validacao.data.senha)
                         : existente.senha;
-                    let entidade = new UsuarioEntity(id, validacao.data.nome, validacao.data.email, hash, existente.ativo, validacao.data.perfil ?? existente.perfil);
+                    let entidade = new UsuarioEntity(id, validacao.data.nome, validacao.data.email, hash, existente.ativo, ehAdmin ? (validacao.data.perfil ?? existente.perfil) : existente.perfil);
                     if(await this.#repositorio.alterar(entidade))
                         res.status(200).json({msg: "Usuario alterado!", usuario: { id, nome: validacao.data.nome, email: validacao.data.email }});
                     else

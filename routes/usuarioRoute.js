@@ -13,19 +13,19 @@ usuarioRouter.get("/", auth.validarToken, (req, res) => {
     ctrl.listar(req, res);
 })
 
-usuarioRouter.get("/todos", auth.validarToken, (req, res) => {
+usuarioRouter.get("/todos", auth.validarToken, auth.exigirAdmin, (req, res) => {
     // #swagger.tags = ['Usuário']
     // #swagger.summary = 'Lista todos os usuários (ativos e inativos) — admin'
     ctrl.listarTodos(req, res);
 })
 
-usuarioRouter.patch("/:id/ativo", auth.validarToken, (req, res) => {
+usuarioRouter.patch("/:id/ativo", auth.validarToken, auth.exigirAdmin, (req, res) => {
     // #swagger.tags = ['Usuário']
     // #swagger.summary = 'Ativa ou desativa um usuário'
     ctrl.toggleAtivo(req, res);
 })
 
-usuarioRouter.post("/", (req, res) => {
+usuarioRouter.post("/", auth.identificarOpcional, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]
@@ -45,7 +45,7 @@ usuarioRouter.put("/:id", auth.validarToken, (req, res) => {
     ctrl.atualizar(req, res)
 })
 
-usuarioRouter.delete("/:id", auth.validarToken, (req, res) => {
+usuarioRouter.delete("/:id", auth.validarToken, auth.exigirAdmin, (req, res) => {
     /* #swagger.security = [{
         "bearerAuth": []
     }]

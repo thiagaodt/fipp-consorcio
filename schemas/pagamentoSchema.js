@@ -32,5 +32,5 @@ export const webhookSchema = z.object({
              .int({ message: "O id do pagamento deve ser um número inteiro." })
              .positive({ message: "O id do pagamento deve ser positivo." }),
 
-    status: z.enum(["CONFIRMADO", "PENDENTE"]).optional()
+    status: z.string().optional()
 });

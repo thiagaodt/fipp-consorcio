@@ -1,12 +1,12 @@
+import './utils/env.js';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
-import dotenv from 'dotenv';
+import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'url';
 import http from 'http'
 import swaggerUi from 'swagger-ui-express';
-import swaggerDocument from "./swagger_output.json" with { type: "json" }; 
 
 import authRouter from './routes/authRoute.js';
 import usuarioRouter from './routes/usuarioRoute.js';
@@ -16,7 +16,6 @@ import assembleiaRouter from './routes/assembleiaRoute.js';
 import pagamentoRouter from './routes/pagamentoRoute.js';
 import saldoRouter from './routes/saldoRoute.js';
 
-dotenv.config();
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,7 +30,14 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(__dirname + '/public'));
 
-app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// A documentação é gerada por "npm run api" (swagger.js -> swagger_output.json).
+const swaggerPath = path.join(__dirname, 'swagger_output.json');
+if (fs.existsSync(swaggerPath)) {
+  const swaggerDocument = JSON.parse(fs.readFileSync(swaggerPath, 'utf8'));
+  app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+} else {
+  console.warn('[AVISO] swagger_output.json não encontrado. Rode "npm run api" para gerar a documentação em /docs.');
+}
 app.use('/auth', authRouter);
 app.use('/usuario', usuarioRouter);
 app.use('/consorcio', consorcioRouter);

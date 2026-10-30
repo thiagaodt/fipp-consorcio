@@ -16,6 +16,12 @@ export default class UsuarioEntity extends Base {
     get ativo() { return this.#ativo } set ativo(value) { this.#ativo = value }
     get perfil() { return this.#perfil } set perfil(value) { this.#perfil = value }
 
+    toJSON() {
+        const json = super.toJSON();
+        delete json.senha;
+        return json;
+    }
+
     constructor(usu_id, usu_nome, usu_email, usu_senha, usu_ativo, usu_perfil) {
         super();
         this.#id = usu_id;

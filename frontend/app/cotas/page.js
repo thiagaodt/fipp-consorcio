@@ -41,7 +41,7 @@ export default function CotasPage() {
         return
       }
       tentativas++
-      api.get(`/pagamento/verificar?pag_id=${pixData.pag_id}&abacate_id=${pixData.id}`)
+      api.get(`/pagamento/verificar?pag_id=${pixData.pag_id}`)
         .then((r) => {
           if (r.status === 'PAID') {
             setPollingAtivo(false)

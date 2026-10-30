@@ -12,6 +12,14 @@ import MovimentacaoAdministradorRepository from "../repositories/movimentacaoAdm
 import MovimentacaoAdministradorEntity from "../entities/movimentacaoAdministradorEntity.js";
 import { pagamentoSchema, pagamentoGerarPixSchema, webhookSchema } from "../schemas/pagamentoSchema.js";
 import AbacatePay from "../utils/abacatePay.js";
+import crypto from "crypto";
+
+// Compara o segredo do webhook em tempo constante.
+function segredoConfere(recebido, esperado) {
+    const a = Buffer.from(String(recebido ?? ""));
+    const b = Buffer.from(String(esperado));
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 
 export default class PagamentoController {
 
@@ -247,6 +255,12 @@ export default class PagamentoController {
                 return res.status(502).json({msg: "Falha na integração com AbacatePay", detalhe: integracaoErro.message});
             }
 
+            // Guarda o id do PIX para a verificação e o webhook consultarem o AbacatePay pelo id certo.
+            const abacateId = pixData?.data?.id ?? pixData?.id;
+            if(abacateId) {
+                await this.#repositorio.registrarAbacateId(pag_id, abacateId);
+            }
+
             return res.status(200).json({
                 msg: "PIX gerado com sucesso",
                 pag_id,
@@ -262,6 +276,15 @@ export default class PagamentoController {
 
     async webhook(req, res) {
         try {
+            // O AbacatePay chama a URL cadastrada com ?webhookSecret=<segredo>.
+            const segredo = process.env.ABACATE_WEBHOOK_SECRET;
+            if(!segredo) {
+                return res.status(503).json({msg: "Webhook não configurado (ABACATE_WEBHOOK_SECRET)"});
+            }
+            if(!segredoConfere(req.query.webhookSecret, segredo)) {
+                return res.status(401).json({msg: "Webhook não autorizado"});
+            }
+
             const externalId = req.body?.data?.pixQrCode?.externalId
                             ?? req.body?.data?.externalId
                             ?? req.body?.externalId
@@ -292,8 +315,17 @@ export default class PagamentoController {
 
             const statusNormalizado = String(status ?? "").toUpperCase();
             const eventoConfirmacao = ["CONFIRMADO", "PAID", "APPROVED", "COMPLETED"].includes(statusNormalizado);
-            if(status && !eventoConfirmacao) {
+            if(!eventoConfirmacao) {
                 return res.status(200).json({msg: "Evento ignorado", status: statusNormalizado});
+            }
+
+            // Confirma direto no AbacatePay antes de liberar o saldo.
+            if(!pagamento.abacateid) {
+                return res.status(409).json({msg: "Pagamento sem PIX registrado"});
+            }
+            const situacao = await this.#abacatePay.verificarStatusPix(pagamento.abacateid);
+            if(situacao?.status !== "PAID") {
+                return res.status(409).json({msg: "O AbacatePay ainda não confirma este pagamento", status: situacao?.status});
             }
 
             await this.#repositorio.confirmarPagamento(pag_id, new Date());
@@ -309,9 +341,9 @@ export default class PagamentoController {
 
     async verificarPagamento(req, res) {
         try {
-            const { pag_id, abacate_id } = req.query;
-            if (!pag_id || !abacate_id) {
-                return res.status(400).json({msg: "pag_id e abacate_id são obrigatórios"});
+            const { pag_id } = req.query;
+            if (!pag_id) {
+                return res.status(400).json({msg: "pag_id é obrigatório"});
             }
 
             const pagamento = await this.#repositorio.buscarPorId(pag_id);
@@ -321,10 +353,14 @@ export default class PagamentoController {
             if (pagamento.status === "CONFIRMADO") {
                 return res.status(200).json({status: "PAID", confirmado: true});
             }
+            // Usa o id do PIX gravado no pagamento, nunca um id vindo do navegador.
+            if (!pagamento.abacateid) {
+                return res.status(409).json({msg: "Pagamento sem PIX registrado"});
+            }
 
             let abacateStatus;
             try {
-                abacateStatus = await this.#abacatePay.verificarStatusPix(abacate_id);
+                abacateStatus = await this.#abacatePay.verificarStatusPix(pagamento.abacateid);
             } catch (err) {
                 return res.status(502).json({msg: "Falha ao consultar AbacatePay", detalhe: err.message});
             }

@@ -9,6 +9,7 @@ export default class PagamentoEntity extends Base {
     #datageracao;
     #datapagamento;
     #valor;
+    #abacateid;
     
     get id() { return this.#id } set id(value) { this.#id = value }
     get cot_id() { return this.#cot_id } set cot_id(value) { this.#cot_id = value }
@@ -17,8 +18,9 @@ export default class PagamentoEntity extends Base {
     get datageracao() { return this.#datageracao } set datageracao(value) { this.#datageracao = value }
     get datapagamento() { return this.#datapagamento } set datapagamento(value) { this.#datapagamento = value }
     get valor() { return this.#valor } set valor(value) { this.#valor = value }
+    get abacateid() { return this.#abacateid } set abacateid(value) { this.#abacateid = value }
 
-    constructor(pag_id, cot_id, ass_id, pag_status, pag_datageracao, pag_datapagamento, pag_valor) {
+    constructor(pag_id, cot_id, ass_id, pag_status, pag_datageracao, pag_datapagamento, pag_valor, pag_abacateid = null) {
         super();
         this.#id = pag_id;
         this.#cot_id = cot_id;
@@ -27,5 +29,6 @@ export default class PagamentoEntity extends Base {
         this.#datageracao = pag_datageracao;
         this.#datapagamento = pag_datapagamento;
         this.#valor = pag_valor;
+        this.#abacateid = pag_abacateid;
     }
 }
